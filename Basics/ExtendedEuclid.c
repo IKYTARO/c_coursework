@@ -1,13 +1,14 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 
 /******************************************************************************
  * ЗАДАЧА: Problem EE -- расширенный алгоритм Eвклида
  *
- * ОПИСАНИЕ:  
- *   Даны два целых числа x и y. Необходимо найти их наибольший общий делитель d и целые, возможно отрицательные числа a и b, такие, что:
- *   ax + by = d (тождество Безу)
+ * ОПИСАНИЕ:
+ *   Даны два целых числа x и y. Необходимо найти их наибольший общий делитель d
+ *и целые, возможно отрицательные числа a и b, такие, что: ax + by = d
+ *(тождество Безу)
  *
  * ВХОДНЫЕ ДАННЫЕ:
  *   - [x]: [long long] [целое число]
@@ -32,7 +33,7 @@ typedef struct {
 ExtendedGCDResult extended_gcd(long long x, long long y) {
     long long c = x, ac = 1, bc = 0;
     long long d = y, ad = 0, bd = 1;
-    
+
     while (d != 0) {
         long long q = c / d;
         long long r = c % d;
@@ -44,14 +45,21 @@ ExtendedGCDResult extended_gcd(long long x, long long y) {
         long long ar = ac - q * ad;
         long long br = bc - q * bd;
 
-        c = d; ac = ad; bc = bd;
-        d = r; ad = ar; bd = br;
+        c = d;
+        ac = ad;
+        bc = bd;
+        
+        d = r;
+        ad = ar;
+        bd = br;
     }
 
     if (d < 0) {
-        d = -d; ad = -ad; bd = -bd;
+        d = -d;
+        ad = -ad;
+        bd = -bd;
     }
-    
+
     ExtendedGCDResult result = {d, ad, bd};
     return result;
 }

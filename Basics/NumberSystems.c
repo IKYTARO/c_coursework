@@ -33,8 +33,8 @@ int main() {
     unsigned value, base;
     if (scanf("%u%u", &value, &base) != 2 || base < 2 || base > 10 ||
         value <= 0) {
-      perror("Invalid input");
-      abort();
+        perror("Invalid input");
+        abort();
     }
 
     print_to_base(value, base);
