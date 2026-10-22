@@ -27,18 +27,18 @@
  ******************************************************************************/
 
 char *strcat_r(char *dest, const char *src, int *bufsz) {
-    int dest_len = strlen(dest), src_len = strlen(src);
-    int concat_len = dest_len + src_len + 1;
-    if (concat_len <= *bufsz) {
-        return strcat(dest, src);
-    }
-
-    char *new_dest = realloc(dest, concat_len);
-    if (!new_dest) {
-        return NULL;
-    }
-
-    *bufsz = concat_len;
-    dest = new_dest;
+  int dest_len = strlen(dest), src_len = strlen(src);
+  int concat_len = dest_len + src_len + 1;
+  if (concat_len <= *bufsz) {
     return strcat(dest, src);
+  }
+
+  char *new_dest = realloc(dest, concat_len);
+  if (!new_dest) {
+    return NULL;
+  }
+
+  *bufsz = concat_len;
+  dest   = new_dest;
+  return strcat(dest, src);
 }

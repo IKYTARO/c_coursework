@@ -25,13 +25,13 @@
  ******************************************************************************/
 
 int main() {
-    unsigned string_sum = 0;
-    char ch;
-    while ((ch = getchar()) != EOF) {
-        string_sum += (unsigned)ch;
-    }
+  unsigned string_sum = 0;
+  char ch;
+  while ((ch = getchar()) != EOF) {
+    string_sum += (unsigned)ch;
+  }
 
-    printf("%u\n", string_sum);
+  printf("%u\n", string_sum);
 
-    return 0;
+  return 0;
 }

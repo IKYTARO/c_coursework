@@ -22,45 +22,44 @@
  ******************************************************************************/
 
 char *replace(char *str, char const *from, char const *to) {
-    int str_len = (int)strlen(str), from_len = (int)strlen(from),
-        to_len = (int)strlen(to);
-    if (from_len == 0) {
-        return strdup(str);
+  int str_len = (int)strlen(str), from_len = (int)strlen(from), to_len = (int)strlen(to);
+  if (from_len == 0) {
+    return strdup(str);
+  }
+
+  int max_hits = str_len / from_len, hits_count = 0;
+  char *hit_ptrs[max_hits];
+
+  char *hit_pos = str;
+  while ((hit_pos = strstr(hit_pos, from)) != NULL) {
+    hit_ptrs[hits_count] = hit_pos;
+    hits_count++;
+    hit_pos += from_len;
+  }
+
+  if (hits_count == 0) {
+    return strdup(str);
+  }
+
+  size_t new_len = str_len + hits_count * (to_len - from_len) + 1;
+  char *new_str  = (char *)calloc(new_len, sizeof(char));
+  if (!new_str) {
+    return NULL;
+  }
+
+  int curr_hit_id = 0, i = 0, j = 0;
+  while (i < str_len) {
+    if (curr_hit_id < hits_count && str + i == hit_ptrs[curr_hit_id]) {
+      memcpy(new_str + j, to, to_len);
+      i += from_len;
+      j += to_len;
+      curr_hit_id++;
+    } else {
+      new_str[j] = str[i];
+      i++;
+      j++;
     }
+  }
 
-    int max_hits = str_len / from_len, hits_count = 0;
-    char *hit_ptrs[max_hits];
-
-    char *hit_pos = str;
-    while ((hit_pos = strstr(hit_pos, from)) != NULL) {
-        hit_ptrs[hits_count] = hit_pos;
-        hits_count++;
-        hit_pos += from_len;
-    }
-
-    if (hits_count == 0) {
-        return strdup(str);
-    }
-
-    size_t new_len = str_len + hits_count * (to_len - from_len) + 1;
-    char *new_str = (char *)calloc(new_len, sizeof(char));
-    if (!new_str) {
-        return NULL;
-    }
-
-    int curr_hit_id = 0, i = 0, j = 0;
-    while (i < str_len) {
-        if (curr_hit_id < hits_count && str + i == hit_ptrs[curr_hit_id]) {
-            memcpy(new_str + j, to, to_len);
-            i += from_len;
-            j += to_len;
-            curr_hit_id++;
-        } else {
-            new_str[j] = str[i];
-            i++;
-            j++;
-        }
-    }
-
-    return new_str;
+  return new_str;
 }

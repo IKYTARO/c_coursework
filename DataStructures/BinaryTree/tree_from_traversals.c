@@ -26,66 +26,65 @@
  ******************************************************************************/
 
 int *read_array(int size) {
-    int *traversal = (int *)calloc(size, sizeof(int));
-    if (!traversal) {
-        return 0;
-    }
+  int *traversal = (int *)calloc(size, sizeof(int));
+  if (!traversal) {
+    return 0;
+  }
 
-    for (int i = 0; i < size; i++) {
-        if (scanf("%d", traversal + i) != 1) {
-            free(traversal);
-            return NULL;
-        }
+  for (int i = 0; i < size; i++) {
+    if (scanf("%d", traversal + i) != 1) {
+      free(traversal);
+      return NULL;
     }
+  }
 
-    return traversal;
+  return traversal;
 }
 
-int inorder_root_index(int const *inorder, int in_start, int in_stop,
-                       int root_value) {
-    for (int index = in_start; index < in_stop; index++) {
-        if (inorder[index] == root_value) {
-            return index;
-        }
+int inorder_root_index(int const *inorder, int in_start, int in_stop, int root_value) {
+  for (int index = in_start; index < in_stop; index++) {
+    if (inorder[index] == root_value) {
+      return index;
     }
+  }
 }
 
-void print_postorder(int const *preorder, int const *inorder, int in_start,
-                     int in_stop, int *pre_index) {
-    if (in_start >= in_stop) {
-        return;
-    }
+void print_postorder(int const *preorder, int const *inorder, int in_start, int in_stop,
+                     int *pre_index) {
+  if (in_start >= in_stop) {
+    return;
+  }
 
-    int root = preorder[*pre_index];
-    (*pre_index)++;
+  int root = preorder[*pre_index];
+  (*pre_index)++;
 
-    int root_id = inorder_root_index(inorder, in_start, in_stop, root);
+  int root_id = inorder_root_index(inorder, in_start, in_stop, root);
 
-    print_postorder(preorder, inorder, in_start, root_id, pre_index);
-    print_postorder(preorder, inorder, root_id + 1, in_stop, pre_index);
-    printf("%d ", root);
+  print_postorder(preorder, inorder, in_start, root_id, pre_index);
+  print_postorder(preorder, inorder, root_id + 1, in_stop, pre_index);
+  printf("%d ", root);
 }
 
 int main() {
-    int n;
-    if (scanf("%d", &n) != 1) {
-        abort();
-    }
+  int n;
+  if (scanf("%d", &n) != 1) {
+    abort();
+  }
 
-    int *preorder = read_array(n);
-    if (!preorder) {
-        abort();
-    }
+  int *preorder = read_array(n);
+  if (!preorder) {
+    abort();
+  }
 
-    int *inorder = read_array(n);
-    if (!inorder) {
-        abort();
-    }
+  int *inorder = read_array(n);
+  if (!inorder) {
+    abort();
+  }
 
-    int preorder_index = 0;
-    print_postorder(preorder, inorder, 0, n, &preorder_index);
+  int preorder_index = 0;
+  print_postorder(preorder, inorder, 0, n, &preorder_index);
 
-    free(inorder);
-    free(preorder);
-    return EXIT_SUCCESS;
+  free(inorder);
+  free(preorder);
+  return EXIT_SUCCESS;
 }

@@ -40,7 +40,9 @@
  * @param b - правый операнд
  * @return int максимум из a и b
  */
-static int max(int a, int b) { return (a > b) ? a : b; }
+static int max(int a, int b) {
+  return (a > b) ? a : b;
+}
 
 /**
  * @brief Создание двумерной матриццы и заполнение ее "-1"
@@ -50,21 +52,20 @@ static int max(int a, int b) { return (a > b) ? a : b; }
  * @return int** - матрица
  */
 int **make_matrix(int row_count, int col_count) {
-    int **matrix = (int **)malloc(row_count * sizeof(int *) +
-                                  (row_count * col_count) * sizeof(int));
-    if (!matrix) {
-        perror("make_matrix: malloc failed");
-        exit(EXIT_FAILURE);
-    }
+  int **matrix = (int **)malloc(row_count * sizeof(int *) + (row_count * col_count) * sizeof(int));
+  if (!matrix) {
+    perror("make_matrix: malloc failed");
+    exit(EXIT_FAILURE);
+  }
 
-    int *data_start = (int *)(matrix + row_count);
-    for (int row = 0; row < row_count; row++) {
-        matrix[row] = data_start + row * col_count;
-    }
+  int *data_start = (int *)(matrix + row_count);
+  for (int row = 0; row < row_count; row++) {
+    matrix[row] = data_start + row * col_count;
+  }
 
-    memset(data_start, -1, (row_count * col_count) * sizeof(int));
+  memset(data_start, -1, (row_count * col_count) * sizeof(int));
 
-    return matrix;
+  return matrix;
 }
 
 /**
@@ -72,7 +73,9 @@ int **make_matrix(int row_count, int col_count) {
  *
  * @param matrix - исходная матрица
  */
-void free_matrix(int **matrix) { free(matrix); }
+void free_matrix(int **matrix) {
+  free(matrix);
+}
 
 /**
  * @brief Рекурсивный алгоритм укладки рюкзака
@@ -85,18 +88,20 @@ void free_matrix(int **matrix) { free(matrix); }
  * @return int - максимальное количество предметов для состояния (i, w)
  */
 static int knapsack(int i, int w, int **V, int N, int *weights) {
-    if (i == N) return 0;
-    if (V[i][w] != -1) return V[i][w];
-
-    int decision = knapsack(i + 1, w, V, N, weights);
-
-    if (w >= weights[i]) {
-        int take_case = knapsack(i + 1, w - weights[i], V, N, weights) + 1;
-        decision = max(decision, take_case);
-    }
-
-    V[i][w] = decision;
+  if (i == N)
+    return 0;
+  if (V[i][w] != -1)
     return V[i][w];
+
+  int decision = knapsack(i + 1, w, V, N, weights);
+
+  if (w >= weights[i]) {
+    int take_case = knapsack(i + 1, w - weights[i], V, N, weights) + 1;
+    decision      = max(decision, take_case);
+  }
+
+  V[i][w] = decision;
+  return V[i][w];
 }
 
 /**
@@ -109,37 +114,37 @@ static int knapsack(int i, int w, int **V, int N, int *weights) {
  * рюкзак
  */
 static int solve_knapsack(int N, int W, int *weights) {
-    int **V = make_matrix(N, W + 1);
-    int result = knapsack(0, W, V, N, weights);
-    free_matrix(V);
+  int **V    = make_matrix(N, W + 1);
+  int result = knapsack(0, W, V, N, weights);
+  free_matrix(V);
 
-    return result;
+  return result;
 }
 
 int main() {
-    int W, N;
+  int W, N;
 
-    if (scanf("%d %d", &W, &N) != 2) {
-        fprintf(stderr, "Error reading W and N.\n");
-        return EXIT_FAILURE;
+  if (scanf("%d %d", &W, &N) != 2) {
+    fprintf(stderr, "Error reading W and N.\n");
+    return EXIT_FAILURE;
+  }
+
+  int *weights = malloc(N * sizeof(int));
+  if (!weights) {
+    perror("main: malloc failed");
+    return EXIT_FAILURE;
+  }
+
+  for (int i = 0; i < N; ++i) {
+    if (scanf("%d", &weights[i]) != 1) {
+      fprintf(stderr, "Error reading weight %d.\n", i);
+      free(weights);
+      return EXIT_FAILURE;
     }
+  }
 
-    int *weights = malloc(N * sizeof(int));
-    if (!weights) {
-        perror("main: malloc failed");
-        return EXIT_FAILURE;
-    }
+  printf("%d\n", solve_knapsack(N, W, weights));
 
-    for (int i = 0; i < N; ++i) {
-        if (scanf("%d", &weights[i]) != 1) {
-            fprintf(stderr, "Error reading weight %d.\n", i);
-            free(weights);
-            return EXIT_FAILURE;
-        }
-    }
-
-    printf("%d\n", solve_knapsack(N, W, weights));
-
-    free(weights);
-    return EXIT_SUCCESS;
+  free(weights);
+  return EXIT_SUCCESS;
 }

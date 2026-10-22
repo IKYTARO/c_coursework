@@ -36,96 +36,94 @@
 
 #define ensure(cond) ensure_impl((cond), __FILE__, __LINE__, #cond)
 
-static void ensure_impl(bool cond, const char *file, int line,
-                        const char *cond_str) {
-    if (!cond) {
-        fprintf(stderr, "%s:%d: Condition failed: %s\n", file, line, cond_str);
-        exit(EXIT_FAILURE);
-    }
+static void ensure_impl(bool cond, const char *file, int line, const char *cond_str) {
+  if (!cond) {
+    fprintf(stderr, "%s:%d: Condition failed: %s\n", file, line, cond_str);
+    exit(EXIT_FAILURE);
+  }
 }
 
 void read_string(int *str_len, char **str) {
-    ensure(scanf("%d", str_len) == 1 && str_len > 0);
+  ensure(scanf("%d", str_len) == 1 && str_len > 0);
 
-    ensure(isspace(getc(stdin)));
+  ensure(isspace(getc(stdin)));
 
-    *str = (char *)calloc(*str_len + 1, sizeof(char));
-    ensure(*str != NULL);
+  *str = (char *)calloc(*str_len + 1, sizeof(char));
+  ensure(*str != NULL);
 
-    if (fgets(*str, *str_len + 1, stdin) == NULL) {
-        fprintf(stderr, "%s:%d: Condition failed: %s\n", __FILE__, __LINE__,
-                "fgets return not NULL");
-        free(str);
-        exit(EXIT_FAILURE);
-    }
+  if (fgets(*str, *str_len + 1, stdin) == NULL) {
+    fprintf(stderr, "%s:%d: Condition failed: %s\n", __FILE__, __LINE__, "fgets return not NULL");
+    free(str);
+    exit(EXIT_FAILURE);
+  }
 }
 
 void reverse(char *src, int start, int stop) {
-    char tmp;
-    while (start < stop) {
-        tmp = src[start];
-        src[start] = src[stop];
-        src[stop] = tmp;
+  char tmp;
+  while (start < stop) {
+    tmp        = src[start];
+    src[start] = src[stop];
+    src[stop]  = tmp;
 
-        start++;
-        stop--;
-    }
+    start++;
+    stop--;
+  }
 }
 
 void reverse_substrings(char *str, char *pattern) {
-    char BUFFER[128];
+  char BUFFER[128];
 
-    regmatch_t matches[1];
-    regex_t regex;
+  regmatch_t matches[1];
+  regex_t regex;
 
-    int res = regcomp(&regex, pattern, REG_EXTENDED);
+  int res = regcomp(&regex, pattern, REG_EXTENDED);
+  if (res != 0) {
+    regerror(res, &regex, BUFFER, sizeof(BUFFER));
+    fprintf(stderr, "Regex compilation failed: %s\n", BUFFER);
+    free(str);
+    free(pattern);
+    exit(EXIT_FAILURE);
+  }
+
+  char *cursor = str;
+  while (1) {
+    res = regexec(&regex, cursor, 1, matches, 0);
+
+    if (res == REG_NOMATCH) {
+      break;
+    }
+
     if (res != 0) {
-        regerror(res, &regex, BUFFER, sizeof(BUFFER));
-        fprintf(stderr, "Regex compilation failed: %s\n", BUFFER);
-        free(str);
-        free(pattern);
-        exit(EXIT_FAILURE);
+      regerror(res, &regex, BUFFER, sizeof(BUFFER));
+      fprintf(stderr, "Regex match failed: %s\n", BUFFER);
+      free(str);
+      free(pattern);
+      regfree(&regex);
+      exit(EXIT_FAILURE);
     }
 
-    char *cursor = str;
-    while (1) {
-        res = regexec(&regex, cursor, 1, matches, 0);
+    int global_start = (cursor - str) + matches[0].rm_so;
+    int global_stop  = (cursor - str) + matches[0].rm_eo - 1;
+    reverse(str, global_start, global_stop);
 
-        if (res == REG_NOMATCH) {
-            break;
-        }
+    cursor += matches[0].rm_eo;
+  }
 
-        if (res != 0) {
-            regerror(res, &regex, BUFFER, sizeof(BUFFER));
-            fprintf(stderr, "Regex match failed: %s\n", BUFFER);
-            free(str);
-            free(pattern);
-            regfree(&regex);
-            exit(EXIT_FAILURE);
-        }
-
-        int global_start = (cursor - str) + matches[0].rm_so;
-        int global_stop = (cursor - str) + matches[0].rm_eo - 1;
-        reverse(str, global_start, global_stop);
-
-        cursor += matches[0].rm_eo;
-    }
-
-    regfree(&regex);
+  regfree(&regex);
 }
 
 int main() {
-    int pattern_len, str_len;
-    char *pattern, *str;
+  int pattern_len, str_len;
+  char *pattern, *str;
 
-    read_string(&pattern_len, &pattern);
-    read_string(&str_len, &str);
+  read_string(&pattern_len, &pattern);
+  read_string(&str_len, &str);
 
-    reverse_substrings(str, pattern);
-    printf("%s\n", str);
+  reverse_substrings(str, pattern);
+  printf("%s\n", str);
 
-    free(str);
-    free(pattern);
+  free(str);
+  free(pattern);
 
-    return EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }

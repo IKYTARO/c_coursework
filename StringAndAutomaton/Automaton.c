@@ -24,27 +24,25 @@
  *   Выход: 0
  ******************************************************************************/
 
-int states[3][5] = {{1, 1, 5, 5, 5}, 
-                    {2, 2, 4, 4, 5}, 
-                    {5, 3, 3, 3, 5}};
+int states[3][5] = {{1, 1, 5, 5, 5}, {2, 2, 4, 4, 5}, {5, 3, 3, 3, 5}};
 
 int main() {
-    int state = 1;
+  int state = 1;
 
-    char c;
-    while (scanf("%c", &c) == 1) {
-        if (c != 'a' && c != 'b' && c != 'c') {
-            break;
-        }
-
-        state = states[c - 'a'][state - 1];
+  char c;
+  while (scanf("%c", &c) == 1) {
+    if (c != 'a' && c != 'b' && c != 'c') {
+      break;
     }
 
-    if (state == 1 || state == 5) {
-        printf("0\n");
-    } else {
-        printf("1\n");
-    }
+    state = states[c - 'a'][state - 1];
+  }
 
-    return EXIT_SUCCESS;
+  if (state == 1 || state == 5) {
+    printf("0\n");
+  } else {
+    printf("1\n");
+  }
+
+  return EXIT_SUCCESS;
 }

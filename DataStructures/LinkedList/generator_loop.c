@@ -28,15 +28,15 @@
 typedef int (*generator_t)(int);
 
 unsigned cycle_len(generator_t gen) {
-    int turtle = gen(0), rabbit = gen(gen(0));
-    while (rabbit != turtle) {
-        rabbit = gen(gen(rabbit));
-        turtle = gen(turtle);
-    }
-    int loop_start = turtle, value = gen(turtle), length = 1;
-    while (value != loop_start) {
-        value = gen(value);
-        length++;
-    }
-    return length;
+  int turtle = gen(0), rabbit = gen(gen(0));
+  while (rabbit != turtle) {
+    rabbit = gen(gen(rabbit));
+    turtle = gen(turtle);
+  }
+  int loop_start = turtle, value = gen(turtle), length = 1;
+  while (value != loop_start) {
+    value = gen(value);
+    length++;
+  }
+  return length;
 }

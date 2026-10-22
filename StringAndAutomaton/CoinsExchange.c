@@ -33,46 +33,52 @@
  *   Выход: 5 (136 + 136 + 136 + 136 + 31)
  ******************************************************************************/
 
-static int min(int a, int b) { return (a < b) ? a : b; }
+static int min(int a, int b) {
+  return (a < b) ? a : b;
+}
 
 static int calc_change(int n, int m, int *changes, int *V) {
-    int i;
-    if (n == 0) return 0;
-    if (n < 0) return INT_MAX;
-    if (V[n] != INT_MAX) return V[n];
-    for (i = 0; i < m; ++i) {
-        int CT = calc_change(n - changes[i], m, changes, V);
-        if (CT == INT_MAX) continue;
-        V[n] = min(V[n], CT + 1);
-    }
+  int i;
+  if (n == 0)
+    return 0;
+  if (n < 0)
+    return INT_MAX;
+  if (V[n] != INT_MAX)
     return V[n];
+  for (i = 0; i < m; ++i) {
+    int CT = calc_change(n - changes[i], m, changes, V);
+    if (CT == INT_MAX)
+      continue;
+    V[n] = min(V[n], CT + 1);
+  }
+  return V[n];
 }
 
 int main() {
-    int N;
-    if (scanf("%d", &N) != 1) {
-        abort();
+  int N;
+  if (scanf("%d", &N) != 1) {
+    abort();
+  }
+
+  int C;
+  if (scanf("%d", &C) != 1) {
+    abort();
+  }
+
+  int changes[C];
+  for (int i = 0; i < C; i++) {
+    if (scanf("%d", changes + i) != 1) {
+      abort();
     }
+  }
 
-    int C;
-    if (scanf("%d", &C) != 1) {
-        abort();
-    }
+  int V[N + 1];
+  for (int i = 0; i < N + 1; i++) {
+    V[i] = INT_MAX;
+  }
 
-    int changes[C];
-    for (int i = 0; i < C; i++) {
-        if (scanf("%d", changes + i) != 1) {
-            abort();
-        }
-    }
+  int result = calc_change(N, C, changes, V);
+  printf("%d\n", result);
 
-    int V[N + 1];
-    for (int i = 0; i < N + 1; i++) {
-        V[i] = INT_MAX;
-    }
-
-    int result = calc_change(N, C, changes, V);
-    printf("%d\n", result);
-
-    return EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }
