@@ -1,2 +1,6 @@
-TaskDescriptionTemplate.txt
-DataStructures/Makefile
+build/
+*.o
+a.out
+/test.sh
+/.clang-format
+.vscode
