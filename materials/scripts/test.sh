@@ -9,7 +9,7 @@ set -u
 TESTS_DIR="${TESTS_DIR:-tests}"
 BIN_DIR="build"
 CC="${CC:-gcc}"
-CFLAGS="${CFLAGS:--std=c11 -Wall -Wextra -Werror -O2 -g}"
+CFLAGS="${CFLAGS:--std=gnu11 -Wall -Wextra -Werror -O2 -g}"
 TIMEOUT="${TIMEOUT:-2}"
 
 # Отступ для блока details (как в go test — 8 пробелов)

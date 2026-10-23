@@ -3,3 +3,4 @@ build/
 a.out
 /test.sh
 /.clang-format
+.vscode
