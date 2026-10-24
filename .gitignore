@@ -4,3 +4,4 @@ a.out
 /test.sh
 /.clang-format
 .vscode
+.idea/

@@ -1,23 +1,16 @@
----
-BasedOnStyle:    Google
-
-# --- Отступы ---
-IndentWidth: 2
-TabWidth:    2
-UseTab:      Never
 
 # Все виды скобок — без отступа (стиль K&R)
 BreakBeforeBraces: Attach
 
 # --- switch / case ---
-IndentCaseLabels:        true    # case и default с отступом
-IndentCaseBlocks:        false   # блок под case — без доп. отступа
+IndentCaseLabels: true    # case и default с отступом
+IndentCaseBlocks: false   # блок под case — без доп. отступа
 
 # --- Выравнивание ---
-AlignConsecutiveAssignments: true
+AlignConsecutiveAssignments:  true
 AlignConsecutiveDeclarations: false
-AlignOperands:               true
-AlignAfterOpenBracket:       Align
+AlignOperands:                true
+AlignAfterOpenBracket:        Align
 
 # Перенос выражений после "=" — выравнивать
 BreakBeforeBinaryOperators: None
@@ -27,15 +20,15 @@ AlignEscapedNewlines:       Left
 ContinuationIndentWidth: 4
 
 # --- Привязка * и & ---
-PointerAlignment:      Right   # int *p
-ReferenceAlignment:    Right   # в C ссылок нет, но опция не помешает
+PointerAlignment:       Right   # int *p
+ReferenceAlignment:     Right   # в C ссылок нет, но опция не помешает
 DerivePointerAlignment: false
 
 # --- Прочее (близко к Google) ---
-ColumnLimit:                 100
-AllowShortFunctionsOnASingleLine: None
+ColumnLimit:                         100
+AllowShortFunctionsOnASingleLine:    None
 AllowShortIfStatementsOnASingleLine: false
-AllowShortLoopsOnASingleLine:  false
-AllowShortBlocksOnASingleLine: Never
-BinPackArguments:              true
-BinPackParameters:             true
+AllowShortLoopsOnASingleLine:        false
+AllowShortBlocksOnASingleLine:       Never
+BinPackArguments:                    true
+BinPackParameters:                   true
