@@ -1,13 +1,11 @@
-#include <assert.h>
-#include <regex.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#define IMMEDIATE_MASK 0x7f
-#define MNEMONIC_MASK 0x70
-#define MAJOR_REGISTER_MASK 0x0c
-#define MINOR_REGISTER_MASK 0x03
+#define IMMEDIATE_MASK 0x7fu
+#define MNEMONIC_MASK 0x70u
+#define MAJOR_REGISTER_MASK 0x0cu
+#define MINOR_REGISTER_MASK 0x03u
 
 // clang-format off
 
@@ -46,7 +44,6 @@
 // clang-format on
 
 typedef enum { MOVI, ADD, SUB, MUL, DIV, IN, OUT, ILLEGAL } mnemonic_type;
-
 typedef enum { A, B, C, D } register_type;
 
 typedef struct {
@@ -55,16 +52,14 @@ typedef struct {
   unsigned val2;
 } instruction_type;
 
-static unsigned extract_major_bit(unsigned upcode) {
+static bool extract_major_bit(unsigned upcode) {
   return (upcode >> 7) & 1u;
 }
 
-static mnemonic_type extract_mnemonic(unsigned upcode) {
-  if (extract_major_bit(upcode) == 0) {
+static mnemonic_type decode_mnemonic(unsigned upcode) {
+  if (!extract_major_bit(upcode))
     return MOVI;
-  }
-  unsigned mnemonic_code = (upcode & MNEMONIC_MASK) >> 4;
-  switch (mnemonic_code) {
+  switch ((upcode & MNEMONIC_MASK) >> 4) {
     case 0:
       return ADD;
     case 1:
@@ -73,13 +68,8 @@ static mnemonic_type extract_mnemonic(unsigned upcode) {
       return MUL;
     case 3:
       return DIV;
-    case 4: {
-      unsigned in_out_bit = (upcode >> 2) & 1u;
-      if (in_out_bit == 0) {
-        return IN;
-      }
-      return OUT;
-    }
+    case 4:
+      return ((upcode >> 2) & 1u) ? OUT : IN;
     default:
       return ILLEGAL;
   }
@@ -88,70 +78,89 @@ static mnemonic_type extract_mnemonic(unsigned upcode) {
 static unsigned extract_immediate(unsigned upcode) {
   return upcode & IMMEDIATE_MASK;
 }
-
 static unsigned extract_major_register(unsigned upcode) {
   return (upcode & MAJOR_REGISTER_MASK) >> 2;
 }
-
 static unsigned extract_minor_register(unsigned upcode) {
   return upcode & MINOR_REGISTER_MASK;
 }
 
 static instruction_type make_instruction(unsigned upcode) {
-  instruction_type instruction = {.mnemonic = ILLEGAL, .val1 = 0, .val2 = 0};
-  instruction.mnemonic         = extract_mnemonic(upcode);
-  switch (instruction.mnemonic) {
+  instruction_type ins = {.mnemonic = ILLEGAL, .val1 = 0, .val2 = 0};
+  ins.mnemonic         = decode_mnemonic(upcode);
+  switch (ins.mnemonic) {
     case MOVI:
-      instruction.val1 = extract_immediate(upcode);
+      ins.val1 = extract_immediate(upcode);
       break;
     case ADD:
     case SUB:
     case MUL:
     case DIV:
-      instruction.val1 = extract_major_register(upcode);
-      instruction.val2 = extract_minor_register(upcode);
+      ins.val1 = extract_major_register(upcode);
+      ins.val2 = extract_minor_register(upcode);
       break;
     case IN:
     case OUT:
-      instruction.val1 = extract_minor_register(upcode);
+      ins.val1 = extract_minor_register(upcode);
       break;
     default:
       break;
   }
-  return instruction;
+  return ins;
 }
 
-static bool print_instruction(instruction_type instruction) {
-  static const char *mnemonics[8] = {"MOVI", "ADD", "SUB", "MUL", "DIV", "IN", "OUT", "ILLEGAL"};
-  static const char *registers[4] = {"A", "B", "C", "D"};
-  switch (instruction.mnemonic) {
+static const char *mnemonic_name(mnemonic_type m) {
+  switch (m) {
     case MOVI:
-      printf("MOVI %u\n", instruction.val1);
+      return "MOVI";
+    case ADD:
+      return "ADD";
+    case SUB:
+      return "SUB";
+    case MUL:
+      return "MUL";
+    case DIV:
+      return "DIV";
+    case IN:
+      return "IN";
+    case OUT:
+      return "OUT";
+    default:
+      return "ILLEGAL";
+  }
+}
+
+static bool print_instruction(instruction_type ins) {
+  static const char *registers[4] = {"A", "B", "C", "D"};
+  switch (ins.mnemonic) {
+    case MOVI:
+      printf("MOVI %u\n", ins.val1);
       break;
     case ADD:
     case SUB:
     case MUL:
     case DIV:
-      printf("%s %s, %s\n", mnemonics[instruction.mnemonic], registers[instruction.val1],
-             registers[instruction.val2]);
+      printf("%s %s, %s\n", mnemonic_name(ins.mnemonic), registers[ins.val1], registers[ins.val2]);
       break;
     case IN:
     case OUT:
-      printf("%s %s\n", mnemonics[instruction.mnemonic], registers[instruction.val1]);
+      printf("%s %s\n", mnemonic_name(ins.mnemonic), registers[ins.val1]);
       break;
     default:
-      printf("%s", "ERROR");
-      break;
+      printf("ERROR\n");
+      return false;
   }
-  return (instruction.mnemonic != ILLEGAL);
+  return true;
 }
 
 int main() {
   unsigned upcode;
   while (scanf("%x", &upcode) == 1) {
-    instruction_type instruction = make_instruction(upcode);
-    if (print_instruction(instruction) == false) {
-      return EXIT_SUCCESS;
+    if (upcode > 0xFFu) {
+      upcode &= 0xFFu;
+    }
+    if (!print_instruction(make_instruction(upcode))) {
+      break;
     }
   }
   return EXIT_SUCCESS;
