@@ -1,15 +1,8 @@
-#include <assert.h>
-#include <regex.h>
+#include "statements/problem_mk.h"
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define IMMEDIATE_MASK 0x7f
-#define MNEMONIC_MASK 0x70
-#define MAJOR_REGISTER_MASK 0x0c
-#define MINOR_REGISTER_MASK 0x03
-#define REGISTER_COUNT 4
-#define MODULO_MASK 0xff
 
 // clang-format off
 
@@ -50,152 +43,133 @@
 
 // clang-format on
 
-typedef enum { MOVI, ADD, SUB, MUL, DIV, IN, OUT, ILLEGAL } mnemonic_type;
-
-typedef enum { A, B, C, D } register_type;
-
-typedef struct {
-  mnemonic_type mnemonic;
-  unsigned val1;
-  unsigned val2;
-} instruction_type;
-
-static unsigned extract_major_bit(unsigned upcode) {
-  return (upcode >> 7) & 1u;
+static enum reg_t reg_from_code(unsigned code) {
+  return (enum reg_t)code;
 }
 
-static mnemonic_type extract_mnemonic(unsigned upcode) {
-  if (extract_major_bit(upcode) == 0) {
-    return MOVI;
+struct instr_t decode_command(unsigned char cmd) {
+  struct instr_t instr = {.opcode = OPLAST, .opnd.imm = 0};
+
+  // MOVI: 0IIIIIII
+  if ((cmd >> 7) == 0) {
+    instr.opcode   = MOVI;
+    instr.opnd.imm = cmd & 0x7F;
+    return instr;
   }
-  unsigned mnemonic_code = (upcode & MNEMONIC_MASK) >> 4;
-  switch (mnemonic_code) {
-    case 0:
-      return ADD;
-    case 1:
-      return SUB;
-    case 2:
-      return MUL;
-    case 3:
-      return DIV;
-    case 4: {
-      unsigned in_out_bit = (upcode >> 2) & 1u;
-      if (in_out_bit == 0) {
-        return IN;
-      }
-      return OUT;
+
+  // IN/OUT: 110000RR / 110001RR
+  if (cmd & 0x40) {
+    unsigned hi = cmd >> 2;
+    if (hi == 0x30) {
+      instr.opcode = IN;
+    } else if (hi == 0x31) {
+      instr.opcode = OUT;
+    } else {
+      return instr;
     }
-    default:
-      return ILLEGAL;
+    instr.opnd.rop = reg_from_code(cmd & 0x3);
+    return instr;
   }
-}
 
-static unsigned extract_immediate(unsigned upcode) {
-  return upcode & IMMEDIATE_MASK;
-}
-
-static unsigned extract_major_register(unsigned upcode) {
-  return (upcode & MAJOR_REGISTER_MASK) >> 2;
-}
-
-static unsigned extract_minor_register(unsigned upcode) {
-  return upcode & MINOR_REGISTER_MASK;
-}
-
-static instruction_type make_instruction(unsigned upcode) {
-  instruction_type instruction = {.mnemonic = ILLEGAL, .val1 = 0, .val2 = 0};
-  instruction.mnemonic         = extract_mnemonic(upcode);
-  switch (instruction.mnemonic) {
-    case MOVI:
-      instruction.val1 = extract_immediate(upcode);
-      break;
+  // ADD/SUB/MUL/DIV: 10MMRRRR
+  switch (cmd >> 4) {
     case ADD:
     case SUB:
     case MUL:
     case DIV:
-      instruction.val1 = extract_major_register(upcode);
-      instruction.val2 = extract_minor_register(upcode);
+      instr.opcode = (enum opcode_t)(cmd >> 4);
       break;
+    default:
+      return instr;
+  }
+  instr.opnd.ops.rd = reg_from_code((cmd >> 2) & 0x3);
+  instr.opnd.ops.rs = reg_from_code(cmd & 0x3);
+  return instr;
+}
+
+static const char *mnemonic_name(struct instr_t instr) {
+  switch (instr.opcode) {
+    case MOVI:
+      return "MOVI";
+    case ADD:
+      return "ADD";
+    case SUB:
+      return "SUB";
+    case MUL:
+      return "MUL";
+    case DIV:
+      return "DIV";
     case IN:
+      return "IN";
     case OUT:
-      instruction.val1 = extract_minor_register(upcode);
-      break;
+      return "OUT";
     default:
-      break;
+      return "ILLEGAL";
   }
-  return instruction;
 }
 
-static void execute_instruction(instruction_type instruction, unsigned *state) {
-  switch (instruction.mnemonic) {
+static bool execute_instruction(struct instr_t const *instr, struct cpu_t *cpu, FILE *in,
+                                FILE *out) {
+  switch (instr->opcode) {
     case MOVI:
-      state[D] = instruction.val1;
-      break;
+      cpu->regs[D] = instr->opnd.imm;
+      return true;
     case ADD:
-      state[instruction.val1] = (state[instruction.val1] + state[instruction.val2]) & MODULO_MASK;
-      break;
+      cpu->regs[instr->opnd.ops.rd] += cpu->regs[instr->opnd.ops.rs];
+      return true;
     case SUB:
-      state[instruction.val1] = (state[instruction.val1] - state[instruction.val2]) & MODULO_MASK;
-      break;
+      cpu->regs[instr->opnd.ops.rd] -= cpu->regs[instr->opnd.ops.rs];
+      return true;
     case MUL:
-      state[instruction.val1] = (state[instruction.val1] * state[instruction.val2]) & MODULO_MASK;
-      break;
+      cpu->regs[instr->opnd.ops.rd] *= cpu->regs[instr->opnd.ops.rs];
+      return true;
     case DIV:
-      state[instruction.val1] = (state[instruction.val1] / state[instruction.val2]) & MODULO_MASK;
-      break;
+      if (cpu->regs[instr->opnd.ops.rs] == 0) {
+        return false;
+      }
+      cpu->regs[instr->opnd.ops.rd] /= cpu->regs[instr->opnd.ops.rs];
+      return true;
     case IN: {
-      unsigned val;
-      scanf("%u", &val);
-      state[instruction.val1] = val;
-    } break;
+      unsigned input;
+      if (fscanf(in, "%u", &input) != 1) {
+        return false;
+      }
+      cpu->regs[instr->opnd.rop] = (uint8_t)input;
+      return true;
+    }
     case OUT:
-      printf("%u\n", state[instruction.val1]);
-      break;
+      fprintf(out, "%u\n", cpu->regs[instr->opnd.rop]);
+      return true;
     default:
-      break;
+      return false;
   }
 }
 
-static void test_make_instruction() {
-  static char *mnemonics[8]   = {"MOVI", "ADD", "SUB", "MUL", "DIV", "IN", "OUT", "ILLEGAL"};
-  unsigned upcodes[]          = {0x7f, 0x88, 0x99, 0xaa, 0xbb, 0xc0, 0xc4, 0xff};
-  instruction_type expected[] = {{MOVI, 127, 0}, {ADD, C, A}, {SUB, C, B}, {MUL, C, C},
-                                 {DIV, C, D},    {IN, A, 0},  {OUT, A, 0}, {ILLEGAL, 0, 0}};
-  for (unsigned i = 0; i < sizeof(upcodes) / sizeof(unsigned); i++) {
-    bool failed             = false;
-    instruction_type actual = make_instruction(upcodes[i]);
-    if (actual.mnemonic != expected[i].mnemonic) {
-      failed = true;
-      printf("--- Test #%d FAILED:\n", i);
-      printf("    --- mnemonic extraction error: actual = %s, expected = %s\n",
-             mnemonics[actual.mnemonic], mnemonics[expected[i].mnemonic]);
-    }
-    if (actual.val1 != expected[i].val1) {
-      if (!failed) {
-        failed = true;
-        printf("--- Test #%d FAILED:\n", i);
-      }
-      printf("    --- major value extraction error: actual = %u, expected = %u\n", actual.val1,
-             expected[i].val1);
-    }
-    if (actual.val2 != expected[i].val2) {
-      if (!failed) {
-        failed = true;
-        printf("--- Test #%d FAILED:\n", i);
-      }
-      printf("    --- minor value extraction error: actual = %u, expected = %u\n", actual.val2,
-             expected[i].val2);
-    }
+int main(int argc, char *argv[]) {
+  if (argc != 2) {
+    fprintf(stderr, "Usage: %s <program.enc>\n", argv[0]);
+    return EXIT_FAILURE;
   }
-}
 
-int main() {
-  unsigned *state = (unsigned *)calloc(REGISTER_COUNT, sizeof(unsigned));
+  FILE *prog = fopen(argv[1], "r");
+  if (!prog) {
+    fprintf(stderr, "Error opening file: %s\n", argv[1]);
+    return EXIT_FAILURE;
+  }
+
+  struct cpu_t cpu = {.regs = {0}};
   unsigned upcode;
-  while (scanf("%x", &upcode) == 1) {
-    instruction_type instruction = make_instruction(upcode);
-    execute_instruction(instruction, state);
+  while (fscanf(prog, "%x", &upcode) == 1) {
+    if (upcode > 0xFF) {
+      fprintf(stderr, "Error read byte: 0x%x\n", upcode);
+      break;
+    }
+    struct instr_t instr = decode_command((unsigned char)upcode);
+    if (!execute_instruction(&instr, &cpu, stdin, stdout)) {
+      fprintf(stderr, "Error execute instruction: %s (0x%x)\n", mnemonic_name(instr), upcode);
+      break;
+    }
   }
-  free(state);
+  fclose(prog);
   return EXIT_SUCCESS;
 }

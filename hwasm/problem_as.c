@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "statements/problem_mk.h"
+
 #define LINE_MAX_SIZE 128
 
 // clang-format off
@@ -41,105 +43,84 @@
 
 // clang-format on
 
-typedef enum { MOVI, ADD, SUB, MUL, DIV, IN, OUT, ILLEGAL } mnemonic_type;
-
-typedef struct {
-  mnemonic_type mnemonic;
-  unsigned imm;
-  char r1, r2;
-} instruction_type;
-
 static bool is_valid_register(char r) {
   return r >= 'A' && r <= 'D';
 }
 
-static unsigned register_code(char r) {
-  switch (r) {
-    case 'A':
-      return 0;
-    case 'B':
-      return 1;
-    case 'C':
-      return 2;
-    case 'D':
-      return 3;
-    default:
-      return 0;
-  }
+static enum reg_t reg_from_char(char r) {
+  return (enum reg_t)(r - 'A');
 }
 
-static bool parse_line(const char *line, instruction_type *ins) {
+static bool parse_line(const char *line, struct instr_t *instr) {
   unsigned imm;
   char r1, r2;
 
   if (sscanf(line, "MOVI %u", &imm) == 1) {
-    if (imm > 0x7f) {
+    if (imm > 0x7F)
       return false;
-    }
-    *ins = (instruction_type){.mnemonic = MOVI, .imm = imm};
+    *instr = (struct instr_t){.opcode = MOVI, .opnd.imm = (int)imm};
     return true;
   }
   if (sscanf(line, "ADD %c, %c", &r1, &r2) == 2) {
-    if (!is_valid_register(r1) || !is_valid_register(r2)) {
+    if (!is_valid_register(r1) || !is_valid_register(r2))
       return false;
-    }
-    *ins = (instruction_type){.mnemonic = ADD, .r1 = r1, .r2 = r2};
+    *instr = (struct instr_t){.opcode   = ADD,
+                              .opnd.ops = {.rd = reg_from_char(r1), .rs = reg_from_char(r2)}};
     return true;
   }
   if (sscanf(line, "SUB %c, %c", &r1, &r2) == 2) {
-    if (!is_valid_register(r1) || !is_valid_register(r2)) {
+    if (!is_valid_register(r1) || !is_valid_register(r2))
       return false;
-    }
-    *ins = (instruction_type){.mnemonic = SUB, .r1 = r1, .r2 = r2};
+    *instr = (struct instr_t){.opcode   = SUB,
+                              .opnd.ops = {.rd = reg_from_char(r1), .rs = reg_from_char(r2)}};
     return true;
   }
   if (sscanf(line, "MUL %c, %c", &r1, &r2) == 2) {
-    if (!is_valid_register(r1) || !is_valid_register(r2)) {
+    if (!is_valid_register(r1) || !is_valid_register(r2))
       return false;
-    }
-    *ins = (instruction_type){.mnemonic = MUL, .r1 = r1, .r2 = r2};
+    *instr = (struct instr_t){.opcode   = MUL,
+                              .opnd.ops = {.rd = reg_from_char(r1), .rs = reg_from_char(r2)}};
     return true;
   }
   if (sscanf(line, "DIV %c, %c", &r1, &r2) == 2) {
-    if (!is_valid_register(r1) || !is_valid_register(r2)) {
+    if (!is_valid_register(r1) || !is_valid_register(r2))
       return false;
-    }
-    *ins = (instruction_type){.mnemonic = DIV, .r1 = r1, .r2 = r2};
+    *instr = (struct instr_t){.opcode   = DIV,
+                              .opnd.ops = {.rd = reg_from_char(r1), .rs = reg_from_char(r2)}};
     return true;
   }
   if (sscanf(line, "IN %c", &r1) == 1) {
-    if (!is_valid_register(r1)) {
+    if (!is_valid_register(r1))
       return false;
-    }
-    *ins = (instruction_type){.mnemonic = IN, .r1 = r1};
+    *instr = (struct instr_t){.opcode = IN, .opnd.rop = reg_from_char(r1)};
     return true;
   }
   if (sscanf(line, "OUT %c", &r1) == 1) {
-    if (!is_valid_register(r1)) {
+    if (!is_valid_register(r1))
       return false;
-    }
-    *ins = (instruction_type){.mnemonic = OUT, .r1 = r1};
+    *instr = (struct instr_t){.opcode = OUT, .opnd.rop = reg_from_char(r1)};
     return true;
   }
   return false;
 }
 
-static unsigned encode(const instruction_type *ins) {
-  switch (ins->mnemonic) {
+static unsigned encode(const struct instr_t *instr) {
+  switch (instr->opcode) {
     case MOVI:
-      return ins->imm;
+      return (unsigned)instr->opnd.imm & 0x7F;
     case ADD:
-      return 0x80 | (register_code(ins->r1) << 2) | register_code(ins->r2);
     case SUB:
-      return 0x90 | (register_code(ins->r1) << 2) | register_code(ins->r2);
     case MUL:
-      return 0xa0 | (register_code(ins->r1) << 2) | register_code(ins->r2);
-    case DIV:
-      return 0xb0 | (register_code(ins->r1) << 2) | register_code(ins->r2);
+    case DIV: {
+      unsigned mm = (unsigned)instr->opcode;
+      unsigned rd = (unsigned)instr->opnd.ops.rd;
+      unsigned rs = (unsigned)instr->opnd.ops.rs;
+      return (mm << 4) | (rd << 2) | rs;
+    }
     case IN:
-      return 0xc0 | register_code(ins->r1);
+      return 0xC0u | (unsigned)instr->opnd.rop;
     case OUT:
-      return 0xc4 | register_code(ins->r1);
+      return 0xC4u | (unsigned)instr->opnd.rop;
     default:
       return 0;
   }
@@ -148,15 +129,14 @@ static unsigned encode(const instruction_type *ins) {
 int main() {
   char line[LINE_MAX_SIZE];
   while (fgets(line, sizeof line, stdin)) {
-    if (line[0] == '\n') {
+    if (line[0] == '\n')
       continue;
-    }
-    instruction_type ins;
-    if (!parse_line(line, &ins)) {
+    struct instr_t instr;
+    if (!parse_line(line, &instr)) {
       printf("ERROR\n");
       break;
     }
-    printf("0x%x ", encode(&ins));
+    printf("0x%x ", encode(&instr));
   }
   return EXIT_SUCCESS;
 }
